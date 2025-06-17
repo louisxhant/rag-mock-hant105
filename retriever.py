@@ -1,9 +1,31 @@
+# retriever.py
 from sklearn.metrics.pairwise import cosine_similarity
-from embedder import vectorizer  # Use this instead of model
+import numpy as np
+from embedder import vectorizer
 
-# Function to retrieve top-k relevant text chunks for a given query
 def retrieve_relevant_chunks(query, embedded_chunks, top_k=3):
-    query_vec = vectorizer.transform([query]).toarray()
-    similarities = [(chunk, cosine_similarity([query_vec[0]], [vec])[0][0]) for chunk, vec in embedded_chunks]
-    sorted_chunks = sorted(similarities, key=lambda x: x[1], reverse=True)
-    return [chunk for chunk, _ in sorted_chunks[:top_k]]
+    """
+    Tìm các chunks liên quan nhất đến query
+    """
+    if not embedded_chunks or not query.strip():
+        return []
+    
+    try:
+        # Transform query using the same vectorizer
+        query_vec = vectorizer.transform([query]).toarray()[0]
+        
+        # Calculate similarities
+        similarities = []
+        for chunk_text, chunk_vec in embedded_chunks:
+            similarity = cosine_similarity([query_vec], [chunk_vec])[0][0]
+            similarities.append((chunk_text, similarity))
+        
+        # Sort by similarity (highest first)
+        similarities.sort(key=lambda x: x[1], reverse=True)
+        
+        # Return top-k chunks
+        return [chunk for chunk, _ in similarities[:top_k]]
+        
+    except Exception as e:
+        print(f"Error in retrieval: {e}")
+        return []
